@@ -12,19 +12,38 @@ app.secret_key = "super_secret_key"
 repo = DocumentRepo()
 database = Database(repo)
 database.load_repo()
+
 """
-return değerlerini result value olacak şekilde ayarlanamsı
+return değerlerini result value olacak şekilde ayarlanması
 errorlerin, result ve reason dönmesi
 try except eklenmeli 
 gereksiz şeyler silinmeli, userla ilgili şeyler gibi
-document data ops ayrılmalı
+document data operations ayrılmalı, adı bence data da olmamalı
 search document ı test et
+save i kontrol et
+draw'a bak
+is there anything we did not implement here, which we implemented in phase 1?
+get by path
 
-
-
-
-
+postman testleri zenginleştirilmeli:
+    - crud operations
+    - search draw import json functionalities
+    - document to document, recursively
+    - add content to the document
+    - add image to the document
+    - import json
+    - import invalid json
+    - delete not existent id
+    - delete by path
+    - delete at invalid path
+    - update not existent id
+    - update by path
+    - update at invalid path
+    - insert node at path
+    - insert node at invalid path
+    - insert node by replacing the existing document
 """
+
 repo_lock = RLock()
 
 def get_current_user():
@@ -58,6 +77,10 @@ def list_documents():
         items = repo.list_all()
         return jsonify({"result": "success", "value": items})
 
+@app.route('/api/document/<doc_id>/path/<path>', methods=['GET'])
+def get_document_by_path(doc_id, path):
+    return jsonify({"result": "success", "value": path})
+
 @app.route('/api/document/<doc_id>', methods=['GET'])
 def get_document_by_id(doc_id):
     with repo_lock:
@@ -87,6 +110,7 @@ def document_data_ops(doc_id):
                 found_doc = repo.find_document_by_id(value)
                 if found_doc:
                     current_document[path] = found_doc
+                    database.save_repo()
                     return jsonify({"message": f"Document with {value} id is inserted at {path}!"})
             
             current_document[path] = value
