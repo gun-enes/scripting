@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, session
+from flask import Flask, request, jsonify
 from threading import RLock
 from document import Document
 from repo import DocumentRepo
@@ -14,17 +14,21 @@ database = Database(repo)
 database.load_repo()
 
 """
-return değerlerini result value olacak şekilde ayarlanması
++ return değerlerini result value olacak şekilde ayarlanması
++ parent function
++ get by path: this is going to be by query.
++ document data operations ayrılmalı, adı bence data da olmamalı
+ben yaptım ama sen yine de bak: 
+    gereksiz şeyler silinmeli, userla ilgili şeyler gibi, 
+    is there anything we did not implement here, which we implemented in phase 1?
+
 errorlerin, result ve reason dönmesi
 try except eklenmeli 
-gereksiz şeyler silinmeli, userla ilgili şeyler gibi
-document data operations ayrılmalı, adı bence data da olmamalı
 search document ı test et
 save i kontrol et
 draw'a bak
-is there anything we did not implement here, which we implemented in phase 1?
-get by path
 
+deepseek e biraz test yazdırdım sen yine de bakabilirsin
 postman testleri zenginleştirilmeli:
     - crud operations
     - search draw import json functionalities
@@ -46,9 +50,6 @@ postman testleri zenginleştirilmeli:
 
 repo_lock = RLock()
 
-def get_current_user():
-    return session.get('user', 'guest')
-
 def is_valid_uuid(val):
     try:
         uuid.UUID(val)
@@ -58,18 +59,21 @@ def is_valid_uuid(val):
 
 @app.route('/api/document', methods=['POST'])
 def create_document():
-    user = get_current_user()
     with repo_lock:
         document_id = repo.create()
         database.save_repo()
-    return jsonify({"message": f"{document_id} is added!", "id": document_id})
+    return jsonify({"result": "success", "value": document_id})
 
 @app.route('/api/document/<doc_id>', methods=['DELETE'])
 def delete_document(doc_id):
     with repo_lock:
-        repo.delete(doc_id)
-        database.save_repo()
-    return jsonify({"message": f"Item with {doc_id} id is deleted!"})
+        try:
+            repo.delete(doc_id)
+            database.save_repo()
+            return jsonify({"result": "success", "value": f"Item with {doc_id} id is deleted!"})
+        except Error as e:
+            return jsonify({"result": "error", "reason": e})
+
 
 @app.route('/api/document', methods=['GET'])
 def list_documents():
@@ -77,92 +81,121 @@ def list_documents():
         items = repo.list_all()
         return jsonify({"result": "success", "value": items})
 
-@app.route('/api/document/<doc_id>/path/<path>', methods=['GET'])
-def get_document_by_path(doc_id, path):
-    return jsonify({"result": "success", "value": path})
-
 @app.route('/api/document/<doc_id>', methods=['GET'])
-def get_document_by_id(doc_id):
-    with repo_lock:
-        # try catch
-        doc = repo.find_document_by_id(doc_id)
-        if doc == None:
-            return jsonify({"result": "error", "reason": "Object does not exist!"})
-        return jsonify({"result": "success", "value": json.loads(doc.json())})
+def get_document(doc_id):
+    path = request.args.get('path')
+    if path:
+        try:
+            val = current_document[path]
+            if hasattr(val, 'json'): # Handle if the result is another Document object
+                return jsonify({"result": "success", "value": val.json()})
+            return jsonify({"result": "success", "value": val})
+        except TypeError:
+            return jsonify({"result": "error", "reason": "Type error in path retrieval"}), 500
+        except KeyError:
+            return jsonify({"result" :"error", "reason": "Path not found"}), 404
 
-@app.route('/api/document/<doc_id>/data', methods=['GET', 'POST', 'DELETE'])
-def document_data_ops(doc_id):
+    else:
+        with repo_lock:
+            doc = repo.find_document_by_id(doc_id)
+            if doc == None:
+                return jsonify({"result": "error", "reason": "Object does not exist!"})
+            return jsonify({"result": "success", "value": json.loads(doc.json())})
+
+@app.route('/api/document/<doc_id>/insert', methods=['POST'])
+def document_insert(doc_id):
     if not is_valid_uuid(doc_id):
-        return jsonify({"error": "Invalid UUID"}), 400
-
+        return jsonify({"result": "error", "reason": "Invalid UUID"}), 400
     with repo_lock:
-        current_document = repo.find_document_by_id(doc_id)
-        if not current_document:
-            return jsonify({"error": f"Document with {doc_id} id is not found"}), 404
+        try:
+            current_document = repo.find_document_by_id(doc_id)
+            if not current_document:
+                return jsonify({"result": "error", "reason": f"Document with {doc_id} id is not found"}), 404
+            path = request.args.get('path') # path is required
+            if not path:
+                return jsonify({"result": "error", "reason": "Path is required"}), 400
 
-        if request.method == 'POST':
             data = request.json
-            path = data.get('path')
-            value = data.get('value') # should be json
-            
-            # if path is invalid, it should return proper error
+            value = data.get('data')
+
             if isinstance(value, str) and is_valid_uuid(value): # insert document into document
                 found_doc = repo.find_document_by_id(value)
                 if found_doc:
                     current_document[path] = found_doc
                     database.save_repo()
-                    return jsonify({"message": f"Document with {value} id is inserted at {path}!"})
-            
+                    return jsonify({"result": "success", "value": f"Document with id {value} is inserted at {path}"})
             current_document[path] = value
             database.save_repo()
-            return jsonify({"message": f"{value} is inserted at {path}!"})
+            return jsonify({"result": "success", "value": f"Item at {path} path is deleted!"})
+        except Exception as e:
+            return jsonify({"result": "error", "reason": e}), 404
 
-        elif request.method == 'GET':
-            path = request.args.get('path') # ?path=some_key
-            
-            if path:
-                try:
-                    val = current_document[path]
-                    
-                    if hasattr(val, 'json'): # Handle if the result is another Document object
-                        return jsonify({"result": val.json()})
-                    return jsonify({"result": val})
-                except TypeError:
-                     return jsonify({"error": "Type error in path retrieval"}), 500
-                except KeyError:
-                     return jsonify({"error": "Path not found"}), 404
-            else:
-                return jsonify({"result": current_document.json()})
 
-        elif request.method == 'DELETE':
-            path = request.args.get('path')
-            if path in current_document:
-                del current_document[path]
-                database.save_repo()
-                return jsonify({"message": f"Item at {path} path is deleted!"})
-            return jsonify({"error": "Path not found"}), 404
+
+@app.route('/api/document/<doc_id>/delete', methods=['DELETE'])
+def document_delete(doc_id):
+    if not is_valid_uuid(doc_id):
+        return jsonify({"result": "error", "reason": "Invalid UUID"}), 400
+    with repo_lock:
+        try:
+            current_document = repo.find_document_by_id(doc_id)
+            if not current_document:
+                return jsonify({"result": "error", "reason": f"Document with {doc_id} id is not found"}), 404
+            path = request.args.get('path') # path is required
+            if not path:
+                return jsonify({"result": "error", "reason": "Path is required"}), 400
+            del current_document[path]
+            database.save_repo()
+            return jsonify({"result": "success", "value": f"Item at {path} path is deleted!"})
+        except IndexError as e:
+            return jsonify({"result": "error", "reason": e}), 404
+        except ValueError as e:
+            return jsonify({"result": "error", "reason": e}), 404
+
 
 @app.route('/api/document/<doc_id>/import', methods=['POST'])
 def import_json(doc_id):
     current_document = repo.find_document_by_id(doc_id)
     if not current_document:
-        return jsonify({"error": "Not found"}), 404
+        return jsonify({"result": "error", "reason": "Document not found"}), 404
     
     json_data = request.json.get('json_data')
     current_document.importJson(json_data)
     database.save_repo()
-    return jsonify({"message": "Json is successfully imported!"})
+    return jsonify({"result": "success"})
 
 @app.route('/api/document/<doc_id>/search', methods=['GET'])
 def search_document(doc_id):
     current_document = repo.find_document_by_id(doc_id)
     query = request.args.get('q')
-    return jsonify({"results": str(current_document.search(query))})
+    return jsonify({"result": "success", "value": str(current_document.search(query))})
 
 @app.route('/api/document/<doc_id>/draw', methods=['GET'])
 def draw_document(doc_id):
     current_document = repo.find_document_by_id(doc_id)
     return current_document.html()
 
+@app.route('/api/document/<doc_id>/parent', methods=['GET'])
+def parent_document(doc_id):
+    current_document = repo.find_document_by_id(doc_id)
+    if current_document.parent() == None:
+        return jsonify({"result": "error", "reason": "Document does not have a parent"})
+    return jsonify({"result": "success", "value": (str(current_document.parent().id), str(current_document.parent().markup))})
+
 if __name__ == '__main__':
     app.run(debug=True, port=8000)
+
+"""
+@app.route('/api/document', methods=['POST'])
+@app.route('/api/document/<doc_id>', methods=['DELETE'])
+@app.route('/api/document', methods=['GET']) #getall
+@app.route('/api/document/<doc_id>/import', methods=['POST'])
+@app.route('/api/document/<doc_id>/search', methods=['GET'])
+@app.route('/api/document/<doc_id>/draw', methods=['GET'])
+@app.route('/api/document/<doc_id>/parent', methods=['GET'])
+
+# with path, path is given in the query as ?path=0/1
+@app.route('/api/document/<doc_id>', methods=['GET']) # it should be testedwith and without path 
+@app.route('/api/document/<doc_id>/insert', methods=['POST'])
+@app.route('/api/document/<doc_id>/delete', methods=['DELETE'])
+"""

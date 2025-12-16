@@ -1,0 +1,776 @@
+{
+  "info": {
+    "name": "Document API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_postman_id": "e5a7a3b4-8b2a-4c1d-8e5f-123456789abc"
+  },
+  "item": [
+    {
+      "name": "CRUD Operations",
+      "item": [
+        {
+          "name": "1.1 Create Document",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"New Document\",\n  \"content\": \"Initial content\",\n  \"metadata\": {\n    \"author\": \"John Doe\",\n    \"tags\": [\"sample\", \"test\"]\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/document",
+              "host": ["{{base_url}}"],
+              "path": ["api", "document"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 201 or 200\", function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has JSON body\", function () {",
+                  "    pm.response.to.be.json;",
+                  "});",
+                  "",
+                  "// Store the created document ID for later use",
+                  "var response = pm.response.json();",
+                  "if (response.id) {",
+                  "    pm.collectionVariables.set(\"document_id\", response.id);",
+                  "    console.log(\"Created document ID: \" + response.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "1.2 Get All Documents",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/document",
+              "host": ["{{base_url}}"],
+              "path": ["api", "document"]
+            }
+          }
+        },
+        {
+          "name": "1.3 Get Document by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/document/{{document_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "document", "{{document_id}}"]
+            }
+          }
+        },
+        {
+          "name": "1.4 Get Document by ID with Path",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/document/{{document_id}}?path=0/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "document", "{{document_id}}"],
+              "query": [
+                {
+                  "key": "path",
+                  "value": "0/1"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "1.5 Update Document (Root)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Updated Document\",\n  \"content\": \"Updated content\",\n  \"action\": \"replace\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/document/{{document_id}}/insert?path=",
+              "host": ["{{base_url}}"],
+              "path": ["api", "document", "{{document_id}}", "insert"],
+              "query": [
+                {
+                  "key": "path",
+                  "value": ""
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "1.6 Delete Document",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/document/{{document_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "document", "{{document_id}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Search, Draw, Import",
+      "item": [
+        {
+          "name": "2.1 Import JSON Structure",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"structure\": {\n    \"sections\": [\n      {\n        \"title\": \"Introduction\",\n        \"content\": \"Welcome to the document\",\n        \"children\": [\n          {\n            \"title\": \"Subsection 1\",\n            \"content\": \"Detailed content here\"\n          }\n        ]\n      }\n    ]\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/document/{{document_id}}/import",
+              "host": ["{{base_url}}"],
+              "path": ["api", "document", "{{document_id}}", "import"]
+            }
+          }
+        },
+        {
+          "name": "2.2 Import Invalid JSON",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"invalid\": json without closing bracket"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/document/{{document_id}}/import",
+              "host": ["{{base_url}}"],
+              "path": ["api", "document", "{{document_id}}", "import"]
+            },
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Should return error for invalid JSON\", function () {",
+                    "    pm.response.to.have.status(400);",
+                    "});"
+                  ],
+                  "type": "text/javascript"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "2.3 Search Document",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/document/{{document_id}}/search?q=content&limit=10",
+              "host": ["{{base_url}}"],
+              "path": ["api", "document", "{{document_id}}", "search"],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "content"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "2.4 Draw Document Structure",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/document/{{document_id}}/draw?format=text&depth=3",
+              "host": ["{{base_url}}"],
+              "path": ["api", "document", "{{document_id}}", "draw"],
+              "query": [
+                {
+                  "key": "format",
+                  "value": "text"
+                },
+                {
+                  "key": "depth",
+                  "value": "3"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "2.5 Get Parent Document",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/document/{{document_id}}/parent",
+              "host": ["{{base_url}}"],
+              "path": ["api", "document", "{{document_id}}", "parent"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Document-to-Document Operations",
+      "item": [
+        {
+          "name": "3.1 Insert Document Reference (UUID)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"document_reference\",\n  \"reference_id\": \"{{another_document_id}}\",\n  \"label\": \"Linked Document\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/document/{{document_id}}/insert?path=0/2",
+              "host": ["{{base_url}}"],
+              "path": ["api", "document", "{{document_id}}", "insert"],
+              "query": [
+                {
+                  "key": "path",
+                  "value": "0/2"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "3.2 Insert Document Recursively",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"nested_document\",\n  \"title\": \"Nested Doc\",\n  \"content\": {\n    \"sections\": [\n      {\n        \"title\": \"Nested Section\",\n        \"content\": \"This is nested content\"\n      }\n    ]\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/document/{{document_id}}/insert?path=1/0/content",
+              "host": ["{{base_url}}"],
+              "path": ["api", "document", "{{document_id}}", "insert"],
+              "query": [
+                {
+                  "key": "path",
+                  "value": "1/0/content"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Content Operations",
+      "item": [
+        {
+          "name": "4.1 Add Text Content to Document",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "\"This is plain text content to insert at the specified path\""
+            },
+            "url": {
+              "raw": "{{base_url}}/api/document/{{document_id}}/insert?path=0/1/content",
+              "host": ["{{base_url}}"],
+              "path": ["api", "document", "{{document_id}}", "insert"],
+              "query": [
+                {
+                  "key": "path",
+                  "value": "0/1/content"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "4.2 Add Structured Content",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"paragraph\",\n  \"content\": \"Formatted paragraph with **bold** text\",\n  \"attributes\": {\n    \"style\": \"highlighted\",\n    \"priority\": \"high\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/document/{{document_id}}/insert?path=0/2",
+              "host": ["{{base_url}}"],
+              "path": ["api", "document", "{{document_id}}", "insert"],
+              "query": [
+                {
+                  "key": "path",
+                  "value": "0/2"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Path-Based Operations",
+      "item": [
+        {
+          "name": "5.1 Insert Node at Valid Path",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"New Node\",\n  \"value\": \"Inserted at path 0/1/2\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/document/{{document_id}}/insert?path=0/1/2",
+              "host": ["{{base_url}}"],
+              "path": ["api", "document", "{{document_id}}", "insert"],
+              "query": [
+                {
+                  "key": "path",
+                  "value": "0/1/2"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "5.2 Insert Node at Invalid Path",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Should Fail\",\n  \"value\": \"Invalid path insertion\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/document/{{document_id}}/insert?path=999/999/999",
+              "host": ["{{base_url}}"],
+              "path": ["api", "document", "{{document_id}}", "insert"],
+              "query": [
+                {
+                  "key": "path",
+                  "value": "999/999/999"
+                }
+              ]
+            },
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Should fail with invalid path\", function () {",
+                    "    pm.expect(pm.response.code).to.be.oneOf([400, 404, 422]);",
+                    "});"
+                  ],
+                  "type": "text/javascript"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "5.3 Insert Node by Replacing Existing",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"replacement\",\n  \"content\": \"This completely replaces the node at path 0\",\n  \"metadata\": {\n    \"replaced_at\": \"2024-01-15\",\n    \"previous_version\": \"v1.0\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/document/{{document_id}}/insert?path=0",
+              "host": ["{{base_url}}"],
+              "path": ["api", "document", "{{document_id}}", "insert"],
+              "query": [
+                {
+                  "key": "path",
+                  "value": "0"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "5.4 Delete by Path",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/document/{{document_id}}/delete?path=0/1/2",
+              "host": ["{{base_url}}"],
+              "path": ["api", "document", "{{document_id}}", "delete"],
+              "query": [
+                {
+                  "key": "path",
+                  "value": "0/1/2"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "5.5 Delete at Invalid Path",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/document/{{document_id}}/delete?path=invalid/path/here",
+              "host": ["{{base_url}}"],
+              "path": ["api", "document", "{{document_id}}", "delete"],
+              "query": [
+                {
+                  "key": "path",
+                  "value": "invalid/path/here"
+                }
+              ]
+            },
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Should fail with invalid path\", function () {",
+                    "    pm.expect(pm.response.code).to.be.oneOf([400, 404]);",
+                    "});"
+                  ],
+                  "type": "text/javascript"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Error and Edge Cases",
+      "item": [
+        {
+          "name": "6.1 Delete Non-Existent ID",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/document/non-existent-id-12345",
+              "host": ["{{base_url}}"],
+              "path": ["api", "document", "non-existent-id-12345"]
+            },
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Should return 404 for non-existent ID\", function () {",
+                    "    pm.response.to.have.status(404);",
+                    "});"
+                  ],
+                  "type": "text/javascript"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "6.2 Update Non-Existent ID",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"update\",\n  \"content\": \"Should fail\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/document/non-existent-id-12345/insert?path=0",
+              "host": ["{{base_url}}"],
+              "path": ["api", "document", "non-existent-id-12345", "insert"],
+              "query": [
+                {
+                  "key": "path",
+                  "value": "0"
+                }
+              ]
+            },
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Should return 404 for non-existent ID\", function () {",
+                    "    pm.response.to.have.status(404);",
+                    "});"
+                  ],
+                  "type": "text/javascript"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "6.3 Update by Path (Replace Content)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"update\",\n  \"new_content\": \"Updated content at specific path\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/document/{{document_id}}/insert?path=0/1/content",
+              "host": ["{{base_url}}"],
+              "path": ["api", "document", "{{document_id}}", "insert"],
+              "query": [
+                {
+                  "key": "path",
+                  "value": "0/1/content"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "6.4 Update at Invalid Path",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"update\",\n  \"content\": \"Should fail due to invalid path\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/document/{{document_id}}/insert?path=invalid/update/path",
+              "host": ["{{base_url}}"],
+              "path": ["api", "document", "{{document_id}}", "insert"],
+              "query": [
+                {
+                  "key": "path",
+                  "value": "invalid/update/path"
+                }
+              ]
+            },
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "pm.test(\"Should fail with invalid path\", function () {",
+                    "    pm.expect(pm.response.code).to.be.oneOf([400, 404]);",
+                    "});"
+                  ],
+                  "type": "text/javascript"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Complex Operations",
+      "item": [
+        {
+          "name": "7.1 Bulk Insert Operations",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"operation\": \"bulk_insert\",\n  \"items\": [\n    {\n      \"path\": \"0/0\",\n      \"content\": \"First item\"\n    },\n    {\n      \"path\": \"0/1\",\n      \"content\": \"Second item\"\n    },\n    {\n      \"path\": \"0/2\",\n      \"content\": \"Third item\"\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/document/{{document_id}}/insert?path=0",
+              "host": ["{{base_url}}"],
+              "path": ["api", "document", "{{document_id}}", "insert"],
+              "query": [
+                {
+                  "key": "path",
+                  "value": "0"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "7.2 Document Merge Operation",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"operation\": \"merge\",\n  \"source_document_id\": \"{{source_doc_id}}\",\n  \"merge_strategy\": \"append\",\n  \"conflict_resolution\": \"rename\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/document/{{document_id}}/insert?path=merge/point",
+              "host": ["{{base_url}}"],
+              "path": ["api", "document", "{{document_id}}", "insert"],
+              "query": [
+                {
+                  "key": "path",
+                  "value": "merge/point"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "7.3 Version Control Operations",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"version\": \"2.0.0\",\n  \"changelog\": \"Added new sections and updated content\",\n  \"author\": \"System\",\n  \"timestamp\": \"2024-01-15T10:30:00Z\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/document/{{document_id}}/insert?path=_version",
+              "host": ["{{base_url}}"],
+              "path": ["api", "document", "{{document_id}}", "insert"],
+              "query": [
+                {
+                  "key": "path",
+                  "value": "_version"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Pre-request script that runs before each request",
+          "console.log('Request:', pm.request.method, pm.request.url);"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:5000"
+    },
+    {
+      "key": "document_id",
+      "value": "test-document-id"
+    },
+    {
+      "key": "another_document_id",
+      "value": "another-test-doc-id"
+    },
+    {
+      "key": "source_doc_id",
+      "value": "source-document-id"
+    }
+  ],
+  "auth": null
+}
