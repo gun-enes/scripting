@@ -1,0 +1,168 @@
+{
+  "info": {
+    "name": "CENG445 Phase 3 API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "List Documents",
+      "request": {
+        "method": "GET",
+        "header": [
+          {"key": "Accept", "value": "application/json"}
+        ],
+        "url": {
+          "raw": "http://localhost:8000/api/document",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8000",
+          "path": ["api", "document"]
+        }
+      }
+    },
+    {
+      "name": "Create Document",
+      "request": {
+        "method": "POST",
+        "header": [
+          {"key": "Accept", "value": "application/json"}
+        ],
+        "url": {
+          "raw": "http://localhost:8000/api/document",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8000",
+          "path": ["api", "document"]
+        }
+      }
+    },
+    {
+      "name": "Get Document",
+      "request": {
+        "method": "GET",
+        "header": [
+          {"key": "Accept", "value": "application/json"}
+        ],
+        "url": {
+          "raw": "http://localhost:8000/api/document/{{doc_id}}",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8000",
+          "path": ["api", "document", "{{doc_id}}"]
+        }
+      }
+    },
+    {
+      "name": "Replace Document (PUT)",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {"key": "Content-Type", "value": "application/json"}
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"value\": {\n    \"markup\": \"document\",\n    \"children\": [\n      {\n        \"markup\": \"paragraph\",\n        \"children\": [],\n        \"content\": \"Hello World\"\n      }\n    ]\n  }\n}"
+        },
+        "url": {
+          "raw": "http://localhost:8000/api/document/{{doc_id}}",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8000",
+          "path": ["api", "document", "{{doc_id}}"]
+        }
+      }
+    },
+    {
+      "name": "Delete Document",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {"key": "Accept", "value": "application/json"}
+        ],
+        "url": {
+          "raw": "http://localhost:8000/api/document/{{doc_id}}",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8000",
+          "path": ["api", "document", "{{doc_id}}"]
+        }
+      }
+    },
+    {
+      "name": "Get Node by Path",
+      "request": {
+        "method": "GET",
+        "header": [
+          {"key": "Accept", "value": "application/json"}
+        ],
+        "url": {
+          "raw": "http://localhost:8000/api/document/{{doc_id}}/path/{{subpath}}",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8000",
+          "path": ["api", "document", "{{doc_id}}", "path", "{{subpath}}"]
+        }
+      }
+    },
+    {
+      "name": "Insert Node at Index (POST)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {"key": "Content-Type", "value": "application/json"}
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"value\": \"paragraph\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:8000/api/document/{{doc_id}}/path/{{subpath}}",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8000",
+          "path": ["api", "document", "{{doc_id}}", "path", "{{subpath}}"]
+        }
+      }
+    },
+    {
+      "name": "Set Attribute/Content at Path (PUT)",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {"key": "Content-Type", "value": "application/json"}
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"value\": \"Hello content\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:8000/api/document/{{doc_id}}/path/{{subpath}}",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8000",
+          "path": ["api", "document", "{{doc_id}}", "path", "{{subpath}}"]
+        }
+      }
+    },
+    {
+      "name": "Delete at Path",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {"key": "Accept", "value": "application/json"}
+        ],
+        "url": {
+          "raw": "http://localhost:8000/api/document/{{doc_id}}/path/{{subpath}}",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8000",
+          "path": ["api", "document", "{{doc_id}}", "path", "{{subpath}}"]
+        }
+      }
+    }
+  ],
+  "variable": [
+    {"key": "doc_id", "value": ""},
+    {"key": "subpath", "value": "0"}
+  ]
+}
