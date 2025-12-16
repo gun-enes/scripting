@@ -1,4 +1,4 @@
-from .document import Document
+from document import Document
 from threading import RLock
 
 class DocumentRepo:
@@ -25,6 +25,15 @@ class DocumentRepo:
     def list(self):
         with self.lock:
             return [(doc_id, doc.description) for doc_id, doc in self.documents.items()]
+
+    def list_all(self):
+        with self.lock:
+            children_list = []
+            for doc_id, doc in self.documents.items():
+                children_list.append((doc_id, doc.markup))
+                children_list.extend(doc.list())
+            return children_list
+
 
     def listattached(self, user):
         with self.lock:

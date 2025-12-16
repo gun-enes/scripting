@@ -2,7 +2,7 @@ import os
 import sqlite3
 from threading import Lock
 
-from models.document import Document
+from document import Document
 
 class Database:
     DB_NAME = "document.db"

@@ -161,6 +161,7 @@ class Document:
                     idx = int(key)
                     if isinstance(value, Document):
                         newNode = Document()
+                        newNode.importJson(value.json())
                         newNode._regenerate_ids() 
                         newNode.parent_doc = node
                         if idx == len(node.children):
@@ -343,3 +344,10 @@ class Document:
 
     def print(self):
         print(self.json())
+
+    def list(self):
+        children_list = []
+        for child in self.children:
+            children_list.append((child.id, child.markup))
+            children_list.extend(child.list())
+        return children_list
