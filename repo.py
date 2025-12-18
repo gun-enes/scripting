@@ -69,5 +69,8 @@ class DocumentRepo:
             # Delete from all tracking dictionaries
             if id in self.documents:
                 del self.documents[id]
+            else:
+                for doc in self.documents.values():
+                    doc.del_id(id) 
             if id in self.attached_users:
                 del self.attached_users[id]
