@@ -317,27 +317,27 @@ class Document:
             
         if self.markup == 'image':
             src = self.attributes.get('src') or ""
-            return f'<img src="{src}" alt="image" />' if src else '<img alt="image" />'
+            return f'\t<img src="{src}" alt="image" />\n' if src else '\t<img alt="image" />\n'
 
         # Handle other markups by processing children
         children_html = "".join([child.html() for child in self.children])
         
         tag_map = {
             'document': lambda: children_html,
-            'paragraph': lambda: f'<p{style_attr}>{children_html}</p>',
+            'paragraph': lambda: f'\t<p{style_attr}>\n{children_html}\n</p>\n',
             'strong': lambda: f'<strong{style_attr}>{children_html}</strong>',
-            'list': lambda: f'<ul{style_attr}>{children_html}</ul>',
-            'item': lambda: f'<li{style_attr}>{children_html}</li>',
-            'table': lambda: f'<table{style_attr}>{children_html}</table>',
-            'row': lambda: f'<tr{style_attr}>{children_html}</tr>',
-            'cell': lambda: f'<td{style_attr}>{children_html}</td>',
+            'list': lambda: f'\t<ul{style_attr}>\n{children_html}</ul>\n',
+            'item': lambda: f'\t<li{style_attr}>\n{children_html}\n</li>\n',
+            'table': lambda: f'\t<table{style_attr}>\n{children_html}</table>\n',
+            'row': lambda: f'\t<tr{style_attr}>\n{children_html}</tr>\n',
+            'cell': lambda: f'\t<td{style_attr}>\n{children_html}\n</td>\n',
         }
         
         if self.markup in tag_map:
             return tag_map[self.markup]()
         if children_html:
             # Default
-            return f'<div{style_attr}>{children_html}</div>'
+            return f'\t<div{style_attr}>\n{children_html}\n</div>\n'
         else:
             return ""
 

@@ -167,7 +167,7 @@ def search_document(doc_id):
 @app.route('/api/document/<doc_id>/draw', methods=['GET'])
 def draw_document(doc_id):
     current_document = repo.find_document_by_id(doc_id)
-    return jsonify({"result": "success", "value": current_document.html()})
+    return current_document.html()
 
 @app.route('/api/document/<doc_id>/parent', methods=['GET'])
 def parent_document(doc_id):
