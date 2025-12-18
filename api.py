@@ -113,7 +113,12 @@ def document_insert(doc_id):
             if not path:
                 return jsonify({"result": "error", "reason": "Path is required"}), 400
 
-            data = request.json # payload
+            data = request.json 
+            if not isinstance(data, dict):
+                current_document[path] = data
+                database.save_repo()
+                return jsonify({"result": "success", "value": f"Data added at {path} path!"})
+
             payload_id = data.get('id')
 
             if payload_id and isinstance(payload_id, str) and is_valid_uuid(payload_id): # insert document into document
@@ -124,6 +129,8 @@ def document_insert(doc_id):
                     return jsonify({"result": "success", "value": f"Document with id {payload_id} is inserted at {path}"}), 201
                 else:
                     return jsonify({"result": "error", "reason": f"Document with id {payload_id} is not found"}), 404
+            else:
+                return jsonify({"result": "error", "reason": "Payload id is not a valid UUID"}), 400
         except Exception as e:
             return jsonify({"result": "error", "reason": str(e)}), 404
 
@@ -167,7 +174,7 @@ def search_document(doc_id):
 @app.route('/api/document/<doc_id>/draw', methods=['GET'])
 def draw_document(doc_id):
     current_document = repo.find_document_by_id(doc_id)
-    return jsonify({"result": "success", "value": current_document.html()})
+    return current_document.html()
 
 @app.route('/api/document/<doc_id>/parent', methods=['GET'])
 def parent_document(doc_id):
