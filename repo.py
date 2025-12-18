@@ -9,6 +9,8 @@ class DocumentRepo:
 
     def find_document_by_id(self, document_id):
         for doc_id, doc in self.documents.items():
+            if doc_id == document_id:
+                return doc
             found = doc.getid(document_id)
             if found:
                 return found

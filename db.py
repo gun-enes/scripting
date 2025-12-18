@@ -1,5 +1,6 @@
 import os
 import sqlite3
+import json
 from threading import Lock
 
 from document import Document
@@ -44,7 +45,8 @@ class Database:
 
             for doc_id, doc_json_str in docs:
                 doc_obj = Document(id=doc_id)
-                doc_obj.importJson(doc_json_str)
+                json_obj = json.loads(doc_json_str)
+                doc_obj.importJson(json_obj)
                 self.repo.documents[doc_id] = doc_obj
 
             print(f"Document repo loaded successfully from: {Database.DB_NAME}")

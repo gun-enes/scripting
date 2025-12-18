@@ -61,17 +61,14 @@ class Document:
 
         return None
     
-    def importJson(self, jsonstr):
+    def importJson(self, data):
         """
         Constructs (re-initializes) the document from a JSON string.
         This will overwrite the current node's data.
         """
         try:
-            data = json.loads(jsonstr)
             self._from_dict(data, parent=self.parent_doc)
             self._notify_observers()
-        except json.JSONDecodeError:
-            raise ValueError("Invalid JSON string")
         except KeyError as e:
             raise ValueError(f"Missing expected key in JSON: {e}")
 

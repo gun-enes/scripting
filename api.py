@@ -18,11 +18,12 @@ database.load_repo()
 + parent function
 + get by path: this is going to be by query.
 + document data operations ayrılmalı, adı bence data da olmamalı
++ errorlerin, result ve reason dönmesi
++ import json çalışıyor
 ben yaptım ama sen yine de bak: 
     gereksiz şeyler silinmeli, userla ilgili şeyler gibi, 
     is there anything we did not implement here, which we implemented in phase 1?
 
-errorlerin, result ve reason dönmesi
 try except eklenmeli 
 search document ı test et
 save i kontrol et
@@ -87,7 +88,7 @@ def get_document(doc_id):
         return jsonify({"result": "error", "reason": "Invalid UUID"}), 400
     with repo_lock:
         current_document = repo.find_document_by_id(doc_id)
-        if not current_document:
+        if current_document == None:
             return jsonify({"result": "error", "reason": "Document not found"}), 404
         else:
             path = request.args.get('path')
@@ -159,16 +160,13 @@ def document_delete(doc_id):
             return jsonify({"result": "error", "reason": e}), 404
 
 
-@app.route('/api/document/<doc_id>/import', methods=['POST'])
-def import_json(doc_id):
+@app.route('/api/document/import', methods=['POST'])
+def import_json():
+    doc_id = repo.create()
     current_document = repo.find_document_by_id(doc_id)
-    if not current_document:
-        return jsonify({"result": "error", "reason": "Document not found"}), 404
-    
-    json_data = request.json.get('json_data')
-    current_document.importJson(json_data)
+    current_document.importJson(request.json)
     database.save_repo()
-    return jsonify({"result": "success"})
+    return jsonify({"result": "success", "value": doc_id}), 201
 
 @app.route('/api/document/<doc_id>/search', methods=['GET'])
 def search_document(doc_id):
