@@ -38,9 +38,9 @@ postman testleri zenginleştirilmeli:
     - add image to the document
     - import json
     - import invalid json
-    - delete not existent id
-    - delete by path
-    - delete at invalid path
+    + delete not existent id
+    + delete by path
+    + delete at invalid path
     - update not existent id
     - update by path
     - update at invalid path
@@ -64,17 +64,6 @@ def create_document():
         document_id = repo.create()
         database.save_repo()
     return jsonify({"result": "success", "value": document_id})
-
-@app.route('/api/document/<doc_id>', methods=['DELETE'])
-def delete_document(doc_id):
-    with repo_lock:
-        try:
-            repo.delete(doc_id)
-            database.save_repo()
-            return jsonify({"result": "success", "value": f"Item with {doc_id} id is deleted!"})
-        except Exception as e:
-            return jsonify({"result": "error", "reason": str(e)}), 404
-
 
 @app.route('/api/document', methods=['GET'])
 def list_documents():
@@ -102,8 +91,10 @@ def get_document(doc_id):
                     return jsonify({"result": "error", "reason": "Type error in path retrieval"}), 500
                 except KeyError:
                     return jsonify({"result" :"error", "reason": "Path not found"}), 404
-                except:
-                    return jsonify({"result": "error", "reason": "An error occurred while retrieving the path"}), 500
+                except ValueError:
+                    return jsonify({"result": "error", "reason": "Path is not appropriate"}), 404
+                except Exception as e:
+                    return jsonify({"result": "error", "reason": f"An error occurred while retrieving the path: {str(e)}"}), 500
             else:
                 return jsonify({"result": "success", "value": json.loads(current_document.json())})
 
@@ -135,8 +126,6 @@ def document_insert(doc_id):
         except Exception as e:
             return jsonify({"result": "error", "reason": e}), 404
 
-
-
 @app.route('/api/document/<doc_id>/delete', methods=['DELETE'])
 def document_delete(doc_id):
     if not is_valid_uuid(doc_id):
@@ -146,19 +135,18 @@ def document_delete(doc_id):
             current_document = repo.find_document_by_id(doc_id)
             if not current_document:
                 return jsonify({"result": "error", "reason": f"Document with {doc_id} id is not found"}), 404
-            path = request.args.get('path') # path is required
+            path = request.args.get('path') # path is optional
             if not path:
-                return jsonify({"result": "error", "reason": "Path is required"}), 400
+                repo.delete(doc_id)
+                database.save_repo()
+                return jsonify({"result": "success", "value": f"Item with {doc_id} id is deleted!"})
             del current_document[path]
             database.save_repo()
             return jsonify({"result": "success", "value": f"Item at {path} path is deleted!"})
-        except IndexError as e:
-            return jsonify({"result": "error", "reason": e}), 404
         except ValueError as e:
-            return jsonify({"result": "error", "reason": e}), 404
+            return jsonify({"result": "error", "reason": "Path is not appropriate"}), 404
         except Exception as e:
-            return jsonify({"result": "error", "reason": e}), 404
-
+            return jsonify({"result": "error", "reason": str(e)}), 404
 
 @app.route('/api/document/import', methods=['POST'])
 def import_json():
@@ -172,12 +160,12 @@ def import_json():
 def search_document(doc_id):
     current_document = repo.find_document_by_id(doc_id)
     query = request.args.get('q')
-    return jsonify({"result": "success", "value": str(current_document.search(query))})
+    return jsonify({"result": "success", "value": current_document.search(query)})
 
 @app.route('/api/document/<doc_id>/draw', methods=['GET'])
 def draw_document(doc_id):
     current_document = repo.find_document_by_id(doc_id)
-    return current_document.html()
+    return jsonify({"result": "success", "value": current_document.html()})
 
 @app.route('/api/document/<doc_id>/parent', methods=['GET'])
 def parent_document(doc_id):
