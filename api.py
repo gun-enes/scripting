@@ -12,43 +12,6 @@ app.secret_key = "super_secret_key"
 repo = DocumentRepo()
 database = Database(repo)
 database.load_repo()
-
-"""
-+ return değerlerini result value olacak şekilde ayarlanması
-+ parent function
-+ get by path: this is going to be by query.
-+ document data operations ayrılmalı, adı bence data da olmamalı
-+ errorlerin, result ve reason dönmesi
-+ import json çalışıyor
-ben yaptım ama sen yine de bak: 
-    gereksiz şeyler silinmeli, userla ilgili şeyler gibi, 
-    is there anything we did not implement here, which we implemented in phase 1?
-
-try except eklenmeli 
-search document ı test et
-save i kontrol et
-draw'a bak
-
-deepseek e biraz test yazdırdım sen yine de bakabilirsin
-postman testleri zenginleştirilmeli:
-    - crud operations
-    - search draw import json functionalities
-    - document to document, recursively
-    - add content to the document
-    - add image to the document
-    - import json
-    - import invalid json
-    + delete not existent id
-    + delete by path
-    + delete at invalid path
-    - update not existent id
-    - update by path
-    - update at invalid path
-    - insert node at path
-    - insert node at invalid path
-    - insert node by replacing the existing document
-"""
-
 repo_lock = RLock()
 
 def is_valid_uuid(val):
@@ -158,12 +121,15 @@ def document_delete(doc_id):
 
 @app.route('/api/document/import', methods=['POST'])
 def import_json():
-    doc_id = repo.create()
-    current_document = repo.find_document_by_id(doc_id)
-    current_document.importJson(request.json)
-    current_document.regenerate_ids() 
-    database.save_repo()
-    return jsonify({"result": "success", "value": doc_id}), 201
+    try:
+        doc_id = repo.create()
+        current_document = repo.find_document_by_id(doc_id)
+        current_document.importJson(request.json)
+        current_document.regenerate_ids() 
+        database.save_repo()
+        return jsonify({"result": "success", "value": doc_id}), 201
+    except Exception as e:
+        return jsonify({"result": "error", "reason": str(e)}), 400
 
 @app.route('/api/document/<doc_id>/search', methods=['GET'])
 def search_document(doc_id):

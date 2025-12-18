@@ -260,7 +260,7 @@ class Document:
                 if key.isdigit():
                     idx = int(key)
                     newNode = Document()
-                    newNode.importJson(document.json())
+                    newNode.importJson(document.to_dict())
                     # Set parent of the inserted document
                     newNode.parent_doc = node
 
