@@ -71,8 +71,8 @@ def delete_document(doc_id):
             repo.delete(doc_id)
             database.save_repo()
             return jsonify({"result": "success", "value": f"Item with {doc_id} id is deleted!"})
-        except Error as e:
-            return jsonify({"result": "error", "reason": e})
+        except Exception as e:
+            return jsonify({"result": "error", "reason": str(e)}), 404
 
 
 @app.route('/api/document', methods=['GET'])
@@ -83,24 +83,28 @@ def list_documents():
 
 @app.route('/api/document/<doc_id>', methods=['GET'])
 def get_document(doc_id):
-    path = request.args.get('path')
-    if path:
-        try:
-            val = current_document[path]
-            if hasattr(val, 'json'): # Handle if the result is another Document object
-                return jsonify({"result": "success", "value": val.json()})
-            return jsonify({"result": "success", "value": val})
-        except TypeError:
-            return jsonify({"result": "error", "reason": "Type error in path retrieval"}), 500
-        except KeyError:
-            return jsonify({"result" :"error", "reason": "Path not found"}), 404
-
-    else:
-        with repo_lock:
-            doc = repo.find_document_by_id(doc_id)
-            if doc == None:
-                return jsonify({"result": "error", "reason": "Object does not exist!"})
-            return jsonify({"result": "success", "value": json.loads(doc.json())})
+    if not is_valid_uuid(doc_id):
+        return jsonify({"result": "error", "reason": "Invalid UUID"}), 400
+    with repo_lock:
+        current_document = repo.find_document_by_id(doc_id)
+        if not current_document:
+            return jsonify({"result": "error", "reason": "Document not found"}), 404
+        else:
+            path = request.args.get('path')
+            if path:
+                try:
+                    val = current_document[path]
+                    if hasattr(val, 'json'): # Handle if the result is another Document object
+                        return jsonify({"result": "success", "value": json.loads(val.json())})
+                    return jsonify({"result": "success", "value": val})
+                except TypeError:
+                    return jsonify({"result": "error", "reason": "Type error in path retrieval"}), 500
+                except KeyError:
+                    return jsonify({"result" :"error", "reason": "Path not found"}), 404
+                except:
+                    return jsonify({"result": "error", "reason": "An error occurred while retrieving the path"}), 500
+            else:
+                return jsonify({"result": "success", "value": json.loads(current_document.json())})
 
 @app.route('/api/document/<doc_id>/insert', methods=['POST'])
 def document_insert(doc_id):
@@ -150,6 +154,8 @@ def document_delete(doc_id):
         except IndexError as e:
             return jsonify({"result": "error", "reason": e}), 404
         except ValueError as e:
+            return jsonify({"result": "error", "reason": e}), 404
+        except Exception as e:
             return jsonify({"result": "error", "reason": e}), 404
 
 

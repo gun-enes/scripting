@@ -45,6 +45,22 @@ class Document:
         if self.parent_doc:
             self.parent_doc._notify_observers_bubble(html_snapshot)
 
+    def _get_path(self,idstr, current_path=""):
+        """
+        Internal helper to find the path to a node with the given id.
+        Returns the path as a string of indices separated by '/'.
+        """
+        if self.id == idstr:
+            return current_path.rstrip('/')
+
+        for idx, child in enumerate(self.children):
+            child_path = f"{current_path}{idx}/"
+            result = child._get_path(idstr, child_path)
+            if result:
+                return result
+
+        return None
+    
     def importJson(self, jsonstr):
         """
         Constructs (re-initializes) the document from a JSON string.
@@ -220,6 +236,18 @@ class Document:
             except Exception as e:
                 raise ValueError(f"Error deleting item at path '{path}': {e}")
 
+    def del_id(self, idstr):
+        """
+        Deletes the node with the given id from the document tree.
+        """
+        with self.lock:
+            path = self._get_path(idstr)
+            if path is not None:
+                self.__delitem__(path)
+                return True
+            else:
+                return False
+    
     def insert(self, path, document):
         """
         Inserts a Document object at the given position.

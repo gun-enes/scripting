@@ -59,7 +59,7 @@ class DocumentRepo:
 
     def delete(self, id):
         with self.lock:
-            if id not in self.documents:
+            if id not in [doc_id for doc_id, _ in self.list_all()]:
                 raise ValueError(f"No document with id: {id}")
                 
             if id in self.attached_users and self.attached_users[id]:
