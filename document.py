@@ -151,11 +151,11 @@ class Document:
             except Exception as e:
                 raise ValueError(f"Error getting item at path '{path}': {e}")
 
-    def _regenerate_ids(self):
+    def regenerate_ids(self):
         self.id = str(uuid.uuid4())
         for child in self.children:
             if isinstance(child, Document):
-                child._regenerate_ids()
+                child.regenerate_ids()
 
     def __setitem__(self, path, value):
         """
@@ -174,8 +174,8 @@ class Document:
                     idx = int(key)
                     if isinstance(value, Document):
                         newNode = Document()
-                        newNode.importJson(value.json())
-                        newNode._regenerate_ids() 
+                        newNode.importJson(value.to_dict())
+                        newNode.regenerate_ids() 
                         newNode.parent_doc = node
                         if idx == len(node.children):
                             node.children.append(newNode)
@@ -346,9 +346,11 @@ class Document:
         Recursively convert the Document object tree to a dictionary
         for JSON serialization.
         """
+
         d = {"markup": self.markup, "id": self.id}
 
         d.update(self.attributes)
+
         #if self.content: d["content"] = self.content
         #if self.style: d["style"] = self.style
         #if self.src: d["src"] = self.src

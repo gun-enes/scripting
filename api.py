@@ -117,23 +117,24 @@ def document_insert(doc_id):
             if not current_document:
                 return jsonify({"result": "error", "reason": f"Document with {doc_id} id is not found"}), 404
             path = request.args.get('path') # path is required
+
+
             if not path:
                 return jsonify({"result": "error", "reason": "Path is required"}), 400
 
-            data = request.json
-            value = data.get('data')
+            data = request.json # payload
+            payload_id = data.get('id')
 
-            if isinstance(value, str) and is_valid_uuid(value): # insert document into document
-                found_doc = repo.find_document_by_id(value)
+            if payload_id and isinstance(payload_id, str) and is_valid_uuid(payload_id): # insert document into document
+                found_doc = repo.find_document_by_id(payload_id)
                 if found_doc:
                     current_document[path] = found_doc
                     database.save_repo()
-                    return jsonify({"result": "success", "value": f"Document with id {value} is inserted at {path}"})
-            current_document[path] = value
-            database.save_repo()
-            return jsonify({"result": "success", "value": f"Item at {path} path is deleted!"})
+                    return jsonify({"result": "success", "value": f"Document with id {payload_id} is inserted at {path}"}), 201
+                else:
+                    return jsonify({"result": "error", "reason": f"Document with id {payload_id} is not found"}), 404
         except Exception as e:
-            return jsonify({"result": "error", "reason": e}), 404
+            return jsonify({"result": "error", "reason": str(e)}), 404
 
 
 
@@ -165,6 +166,7 @@ def import_json():
     doc_id = repo.create()
     current_document = repo.find_document_by_id(doc_id)
     current_document.importJson(request.json)
+    current_document.regenerate_ids() 
     database.save_repo()
     return jsonify({"result": "success", "value": doc_id}), 201
 
@@ -184,7 +186,7 @@ def parent_document(doc_id):
     current_document = repo.find_document_by_id(doc_id)
     if current_document.parent() == None:
         return jsonify({"result": "error", "reason": "Document does not have a parent"})
-    return jsonify({"result": "success", "value": (str(current_document.parent().id), str(current_document.parent().markup))})
+    return jsonify({"result": "success", "value": {"id" : str(current_document.parent().id), "markup": str(current_document.parent().markup)}})
 
 if __name__ == '__main__':
     app.run(debug=True, port=8000)
