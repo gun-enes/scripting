@@ -131,7 +131,8 @@ def import_json():
 def search_document(doc_id):
     current_document = repo.find_document_by_id(doc_id)
     query = request.args.get('q')
-    return jsonify({"result": "success", "value": [json.loads(curr) for curr in current_document.search(query)]})
+    results = [json.loads(curr) for curr in current_document.search(query)]
+    return jsonify({"result": "success", "value": results})
 
 @app.route('/api/document/<doc_id>/draw', methods=['GET'])
 def draw_document(doc_id):
