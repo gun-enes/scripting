@@ -141,10 +141,14 @@ def draw_document(doc_id):
 
 @app.route('/api/document/<doc_id>/parent', methods=['GET'])
 def parent_document(doc_id):
-    current_document = repo.find_document_by_id(doc_id)
-    if current_document.parent() == None:
+    parent = newDb.parent(doc_id) # parent is fake, dont do any operations with it
+    if parent == None:
         return jsonify({"result": "error", "reason": "Document does not have a parent"})
-    return jsonify({"result": "success", "value": {"id" : str(current_document.parent().id), "markup": str(current_document.parent().markup)}})
+
+    result = {"id" : parent.id, "markup":parent.markup}
+    if parent.attributes != {}:
+        result.update(parent.attributes)
+    return jsonify({"result": "success", "value": result})
 
 if __name__ == '__main__':
     app.run(debug=True, port=8000)

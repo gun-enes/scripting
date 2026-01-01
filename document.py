@@ -350,7 +350,6 @@ class Document:
         d["id"] = self.id
 
         attrs = dict(self.attributes)
-        attrs.pop("children", None)   # remove if present
         d.update(attrs)
 
         if self.children:

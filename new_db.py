@@ -114,15 +114,16 @@ class NewDb:
 
     def parent(self, doc_id):
         doc_meta = self._get_document_obj_by_id(doc_id)
+        root_id, path = doc_meta
         if doc_meta == None:
             return None
         with sqlite3.connect(NewDb.DB_NAME) as conn:
             cursor = conn.cursor()
-            cursor.execute("""select id, markup, attributes, root_id, path  from repo where path = ? """, (path.rsplit("/", 1)[0],))
+            cursor.execute("""select id, markup, attributes from repo where path = ? """, (path.rsplit("/", 1)[0],))
             doc_tpl = cursor.fetchone()
             if doc_tpl == None:
                 return None
-            return DocumentDbModel(doc_tpl.id, doc_tpl.root_id, doc_tpl.markup, doc_tpl.attributes, doc_tpl.path)
+            return Document(id = doc_tpl[0], markup=doc_tpl[1], attributes=json.loads(doc_tpl[2]))
 
     def get_document_by_path(self, path, root_id):
         with sqlite3.connect(NewDb.DB_NAME) as conn:
