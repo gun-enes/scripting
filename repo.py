@@ -1,27 +1,26 @@
 from document import Document
 from threading import RLock
+from new_db import NewDb, DocumentDbModel
+import json
+
 
 class DocumentRepo:
-    def __init__(self):
+    def __init__(self, db):
+        self.db = NewDb()
         self.documents = {} 
         self.attached_users = {}
         self.lock = RLock()
 
-    def find_document_by_id(self, document_id):
-        for doc_id, doc in self.documents.items():
-            if doc_id == document_id:
-                return doc
-            found = doc.getid(document_id)
-            if found:
-                return found
-        return None
-
+    def find_document_by_id(self, doc_id):
+        return self.db.get_document_by_id(doc_id)
 
     def create(self):
         with self.lock:
             doc = Document()
             self.documents[doc.id] = doc
             self.attached_users[doc.id] = set()
+            db_model = DocumentDbModel(doc.id, doc.id, "" ,doc.markup, json.dumps(doc.attributes))
+            self.db.insert_document(db_model)
             return doc.id
 
     def list(self):
@@ -30,11 +29,14 @@ class DocumentRepo:
 
     def list_all(self):
         with self.lock:
+            return self.db.get_all()
+            """
             children_list = []
             for doc_id, doc in self.documents.items():
                 children_list.append((doc_id, doc.markup))
                 children_list.extend(doc.list())
             return children_list
+            """
 
 
     def listattached(self, user):

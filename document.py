@@ -9,12 +9,12 @@ class Document:
     Each Document object is a node in a tree, with a markup type,
     attributes (like content, style, src), and a list of children.
     """
-    def __init__(self, markup='document', id=None, parent=None):
+    def __init__(self, markup='document', id=None, parent=None, attributes = {}):
         self.markup = markup
         self.description = "New document"
         self.id = id if id else str(uuid.uuid4())
         self.children = []
-        self.attributes = {}
+        self.attributes = attributes
         self.parent_doc = parent
         self.observers = set()
         self.lock = RLock()
@@ -81,9 +81,6 @@ class Document:
         self.id = data.get('id', str(uuid.uuid4()))
         self.parent_doc = parent
         self.attributes = {}
-        #self.content = data.get('content')
-        #self.style = data.get('style')
-        #self.src = data.get('src')
         self.children = []
 
         reserved_keys = {'markup', 'id', 'children'}
@@ -181,6 +178,13 @@ class Document:
                             node.children.append(newNode)
                         else:
                             node.children.insert(idx, newNode)
+                    elif isinstance(value, tuple):
+                        new_node = Document(id=value[0], markup=value[1], parent=node, attributes=json.loads(value[2]))
+                        if idx == len(node.children):
+                            node.children.append(new_node)
+                        else:
+                            node.children.insert(idx, new_node)
+
                     else:
                         new_node = Document(markup=str(value), parent=node)
 
@@ -201,7 +205,7 @@ class Document:
                 node._notify_observers()
 
             except Exception as e:
-                raise ValueError(f"Error setting item at path '{path}': {e}")
+                raise ValueError(f"Error setting item at path {path}: {e}")
 
     def __delitem__(self, path):
         """
@@ -340,24 +344,18 @@ class Document:
             return f'\t<div{style_attr}>\n{children_html}\n</div>\n'
         else:
             return ""
-
     def to_dict(self):
-        """
-        Recursively convert the Document object tree to a dictionary
-        for JSON serialization.
-        """
+        d = {}
+        d["markup"] = self.markup
+        d["id"] = self.id
 
-        d = {"markup": self.markup, "id": self.id}
+        attrs = dict(self.attributes)
+        attrs.pop("children", None)   # remove if present
+        d.update(attrs)
 
-        d.update(self.attributes)
-
-        #if self.content: d["content"] = self.content
-        #if self.style: d["style"] = self.style
-        #if self.src: d["src"] = self.src
-        
         if self.children:
             d["children"] = [child.to_dict() for child in self.children]
-            
+
         return d
 
     def json(self):

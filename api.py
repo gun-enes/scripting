@@ -2,16 +2,17 @@ from flask import Flask, request, jsonify
 from threading import RLock
 from document import Document
 from repo import DocumentRepo
-from db import Database
+from new_db import NewDb
 import json  
 import uuid
 
 app = Flask(__name__)
 app.secret_key = "super_secret_key"  
 
-repo = DocumentRepo()
-database = Database(repo)
-database.load_repo()
+
+newDb = NewDb()
+newDb.init_repo()
+repo = DocumentRepo(newDb)
 repo_lock = RLock()
 
 def is_valid_uuid(val):
@@ -25,7 +26,6 @@ def is_valid_uuid(val):
 def create_document():
     with repo_lock:
         document_id = repo.create()
-        database.save_repo()
     return jsonify({"result": "success", "value": document_id})
 
 @app.route('/api/document', methods=['GET'])
@@ -39,27 +39,26 @@ def get_document(doc_id):
     if not is_valid_uuid(doc_id):
         return jsonify({"result": "error", "reason": "Invalid UUID"}), 400
     with repo_lock:
-        current_document = repo.find_document_by_id(doc_id)
-        if current_document == None:
+        root_document = repo.find_document_by_id(doc_id)
+        if root_document == None:
             return jsonify({"result": "error", "reason": "Document not found"}), 404
+        path = request.args.get('path')
+        if path:
+            try:
+                val = root_document[path]
+                if hasattr(val, 'json'): # Handle if the result is another Document object
+                    return jsonify({"result": "success", "value": json.loads(val.json())})
+                return jsonify({"result": "success", "value": val})
+            except TypeError:
+                return jsonify({"result": "error", "reason": "Type error in path retrieval"}), 500
+            except KeyError:
+                return jsonify({"result" :"error", "reason": "Path not found"}), 404
+            except ValueError:
+                return jsonify({"result": "error", "reason": "Path is not appropriate"}), 404
+            except Exception as e:
+                return jsonify({"result": "error", "reason": f"An error occurred while retrieving the path: {str(e)}"}), 500
         else:
-            path = request.args.get('path')
-            if path:
-                try:
-                    val = current_document[path]
-                    if hasattr(val, 'json'): # Handle if the result is another Document object
-                        return jsonify({"result": "success", "value": json.loads(val.json())})
-                    return jsonify({"result": "success", "value": val})
-                except TypeError:
-                    return jsonify({"result": "error", "reason": "Type error in path retrieval"}), 500
-                except KeyError:
-                    return jsonify({"result" :"error", "reason": "Path not found"}), 404
-                except ValueError:
-                    return jsonify({"result": "error", "reason": "Path is not appropriate"}), 404
-                except Exception as e:
-                    return jsonify({"result": "error", "reason": f"An error occurred while retrieving the path: {str(e)}"}), 500
-            else:
-                return jsonify({"result": "success", "value": json.loads(current_document.json())})
+            return jsonify({"result": "success", "value": json.loads(root_document.json())})
 
 @app.route('/api/document/<doc_id>/insert', methods=['POST'])
 def document_insert(doc_id):
@@ -79,7 +78,6 @@ def document_insert(doc_id):
             data = request.json 
             if not isinstance(data, dict):
                 current_document[path] = data
-                database.save_repo()
                 return jsonify({"result": "success", "value": f"Data added at {path} path!"})
 
             payload_id = data.get('id')
@@ -88,12 +86,13 @@ def document_insert(doc_id):
                 found_doc = repo.find_document_by_id(payload_id)
                 if found_doc:
                     current_document[path] = found_doc
-                    database.save_repo()
                     return jsonify({"result": "success", "value": f"Document with id {payload_id} is inserted at {path}"}), 201
                 else:
                     return jsonify({"result": "error", "reason": f"Document with id {payload_id} is not found"}), 404
-            else:
-                return jsonify({"result": "error", "reason": "Payload id is not a valid UUID"}), 400
+            if data.get("value"):
+                value = data.get("value")
+                current_document[path] = value
+                return jsonify({"result": "success", "value": value + " is inserted at " + path}), 200
         except Exception as e:
             return jsonify({"result": "error", "reason": str(e)}), 404
 
@@ -109,10 +108,8 @@ def document_delete(doc_id):
             path = request.args.get('path') # path is optional
             if not path:
                 repo.delete(doc_id)
-                database.save_repo()
                 return jsonify({"result": "success", "value": f"Item with {doc_id} id is deleted!"})
             del current_document[path]
-            database.save_repo()
             return jsonify({"result": "success", "value": f"Item at {path} path is deleted!"})
         except ValueError as e:
             return jsonify({"result": "error", "reason": "Path is not appropriate"}), 404
@@ -122,12 +119,11 @@ def document_delete(doc_id):
 @app.route('/api/document/import', methods=['POST'])
 def import_json():
     try:
-        doc_id = repo.create()
-        current_document = repo.find_document_by_id(doc_id)
-        current_document.importJson(request.json)
-        current_document.regenerate_ids() 
-        database.save_repo()
-        return jsonify({"result": "success", "value": doc_id}), 201
+        new_doc = Document()
+        new_doc.importJson(request.json)
+        new_doc.regenerate_ids() 
+        newDb.insert_document_tree(new_doc)
+        return jsonify({"result": "success", "value": new_doc.id}), 201
     except Exception as e:
         return jsonify({"result": "error", "reason": str(e)}), 400
 
