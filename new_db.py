@@ -74,8 +74,6 @@ class NewDb:
     def search(self, text):
         with sqlite3.connect(NewDb.DB_NAME) as conn:
             cursor = conn.cursor()
-            if db_model.root_id != db_model.id:
-                self._update_siblings(cursor, db_model.path, 1)
             cursor.execute(
                 """select * from where markup like ? or attributes like ?""",
                 ("%" + text + "%", "%" + text + "%")
@@ -95,14 +93,11 @@ class NewDb:
 
     def delete_document(self, doc_id):
         doc_meta = self._get_document_obj_by_id(doc_id)
-        print(doc_meta)
         with sqlite3.connect(NewDb.DB_NAME) as conn:
             root_id = doc_meta[0]
             path = doc_meta[1]
 
             cursor = conn.cursor()
-            if root_id != doc_id:
-                self._update_siblings(cursor, path, -1)
 
             cursor.execute( # remove descendants and itself in a single query, including root
                 """
@@ -110,6 +105,10 @@ class NewDb:
                 """,
                 (path + "%", root_id)
             )
+
+            if root_id != doc_id:
+                print(f"Updating siblings for {path}")
+                self._update_siblings(cursor, path, -1)
             conn.commit()
 
     def parent(self, doc_id):
@@ -191,8 +190,14 @@ class NewDb:
                 lng = len(doc_parts)
                 sibling_parts = s[1].split("/")
                 if int(sibling_parts[lng-1]) < int(doc_parts[lng-1]): # take the middle one
+                    """
+                    update is in 0/1/0
+                    when inserting 0/1/0 -> 0/2/0
+                    when deleting 0/1/0 -> 0/0/0
+                    """
                     continue # <= means include the same, so <
                 else:
+                    print(s)
                     sibling_parts[lng-1]  = str(int(sibling_parts[lng-1]) + operation)
                     new_path = "/".join(sibling_parts)
                     cursor.execute(

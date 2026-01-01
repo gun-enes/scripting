@@ -70,6 +70,7 @@ class DocumentRepo:
                 # Check if the set of users is not empty
                 raise PermissionError("Cannot delete document: users are still attached.")
                 
+            self.db.delete_document(id)
             # Delete from all tracking dictionaries
             if id in self.documents:
                 del self.documents[id]

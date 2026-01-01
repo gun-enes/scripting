@@ -109,6 +109,7 @@ def document_delete(doc_id):
             if not path:
                 repo.delete(doc_id)
                 return jsonify({"result": "success", "value": f"Item with {doc_id} id is deleted!"})
+            newDb.delete_document(current_document[path].id)
             del current_document[path]
             return jsonify({"result": "success", "value": f"Item at {path} path is deleted!"})
         except ValueError as e:
