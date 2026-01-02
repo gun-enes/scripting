@@ -83,19 +83,79 @@ class NewDb:
     def insert_document(self, db_model):
         with sqlite3.connect(NewDb.DB_NAME) as conn:
             cursor = conn.cursor()
-            if db_model.root_id != db_model.id:
-                self._update_siblings(cursor, db_model.path, 1)
             cursor.execute(
                 """insert or replace into repo (id, markup, path, root_id, attributes) values (?, ?, ?, ?, ?)""",
                 (db_model.id, db_model.markup, db_model.path, db_model.root_id, db_model.attributes)
             )
+            # update siblings and nephews
+            if db_model.root_id != db_model.id:
+                self._update_siblings(cursor, root_id, db_model.path, 1)
             conn.commit()
+
+    def insert_data_to_document(self, doc_id, path, markup, attributes):
+        doc_meta = self._get_document_obj_by_id(doc_id) # doc is included
+        root_id, abs_path = doc_meta
+        new_id = str(uuid.uuid4())
+        new_path = abs_path + "/" + path 
+        with sqlite3.connect(NewDb.DB_NAME) as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                """insert or replace into repo (id, markup, path, root_id, attributes) values (?, ?, ?, ?, ?)""",
+                (doc_id, markup, new_path, root_id, attributes)
+            )
+
+            # update siblings and nephews
+            if root_id != db_model.id:
+                self._update_siblings(cursor, root_id, db_model.path, 1)
+
+            conn.commit()
+
+    def get_descendants(self, root_id, path):
+        with sqlite3.connect(NewDb.DB_NAME) as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                    """
+                    select id, path, markup, attributes
+                    from repo 
+                    where root_id = ? and path like ? 
+                    """,(root_id, path + "%"))
+            return cursor.fetchall()
+
+    def insert_document_to_document(self, original_doc_id, given_doc_id, new_path):
+        doc_meta = self._get_document_obj_by_id(given_doc_id)
+        old_root_id, old_path = doc_meta
+        desc = self.get_descendants(old_root_id, old_path)
+
+        doc_meta = self._get_document_obj_by_id(original_doc_id) # doc is included
+        root_id, abs_path = doc_meta
+
+        for d in desc:
+            if abs_path != "":
+                abs_path = abs_path + "/" 
+            # 0/0
+            p = abs_path + new_path + d[1][len(old_path):] # remove old path prefix add the new one
+            print("new_path", new_path)
+            print("p", p)
+            print("d[1]", d[1])
+            print("old_path", old_path)
+            new_id = str(uuid.uuid4())
+            m = DocumentDbModel(new_id, root_id, p, d[2], d[3])
+            with sqlite3.connect(NewDb.DB_NAME) as conn:
+                cursor = conn.cursor()
+                if d[0] == given_doc_id:
+                    self._update_siblings(cursor, root_id, p, 1)
+                cursor.execute(
+                    """insert into repo (id, root_id, path, markup , attributes) values (?, ?, ?, ?, ?)""",
+                    (new_id, root_id, p, d[2], d[3])
+                )
+                # update siblings and nephews
+                conn.commit()
 
     def delete_document(self, doc_id):
         doc_meta = self._get_document_obj_by_id(doc_id)
+        root_id = doc_meta[0]
+        path = doc_meta[1]
         with sqlite3.connect(NewDb.DB_NAME) as conn:
-            root_id = doc_meta[0]
-            path = doc_meta[1]
 
             cursor = conn.cursor()
 
@@ -108,7 +168,7 @@ class NewDb:
 
             if root_id != doc_id:
                 print(f"Updating siblings for {path}")
-                self._update_siblings(cursor, path, -1)
+                self._update_siblings(cursor, root_id, path, -1)
             conn.commit()
 
     def parent(self, doc_id):
@@ -140,9 +200,9 @@ class NewDb:
             cursor.execute("""
                 select id, markup, attributes, path
                 from repo
-                where root_id = ?
-                and path like ?
-                           """
+                where root_id = ? and path like ?
+                order by path asc
+                """
             ,(root_id, f"{path}%")) # get itself and the descendants
 
             doc = cursor.fetchall()
@@ -171,7 +231,7 @@ class NewDb:
             doc_obj[cur_path] = d[0:3]
         return doc_obj
 
-    def _update_siblings(self, cursor, path, operation):
+    def _update_siblings(self, cursor, root_id, path, operation):
         if len(path) == 1:
             path_var = path + "%"
         else:
@@ -179,9 +239,9 @@ class NewDb:
         # get sibling documents
         cursor.execute(
                 """
-                select id, path from repo where path like ?
+                select id, path from repo where path like ? and root_id = ? order by path asc
                 """,
-                (path_var,)
+                (path_var,root_id)
             )
         siblings = cursor.fetchall()
         if siblings:
@@ -197,7 +257,9 @@ class NewDb:
                     """
                     continue # <= means include the same, so <
                 else:
+                    print(siblings)
                     print(s)
+                    print(path)
                     sibling_parts[lng-1]  = str(int(sibling_parts[lng-1]) + operation)
                     new_path = "/".join(sibling_parts)
                     cursor.execute(
