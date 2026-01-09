@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Phase 4: Document Editor</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        body { font-family: sans-serif; display: flex; height: 100vh; margin: 0; }
+        
+        /* Sidebar Styles */
+        #sidebar { width: 300px; background: #f0f0f0; padding: 20px; border-right: 1px solid #ccc; display: flex; flex-direction: column; gap: 15px; }
+        .control-group { background: white; padding: 10px; border: 1px solid #ddd; border-radius: 4px; }
+        input, select, button { width: 100%; box-sizing: border-box; margin-bottom: 5px; padding: 5px; }
+        button { cursor: pointer; background: #007bff; color: white; border: none; }
+        button.delete { background: #dc3545; }
+        
+        /* Main Display */
+        #main-view { flex-grow: 1; padding: 20px; overflow: auto; background: #fff; }
+        
+        /* Status Bar */
+        #status-bar { margin-top: auto; font-size: 0.8em; color: #666; }
+        .online { color: green; font-weight: bold; }
+        .offline { color: red; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <div id="sidebar">
+        <h3>Document Controller</h3>
+        
+        <div class="control-group">
+            <label>Select Document:</label>
+            <select id="docSelector" onchange="loadCurrentDoc()"></select>
+            <button onclick="createNewDoc()">+ Create New</button>
+        </div>
+
+        <div class="control-group">
+            <label>Path (e.g. 0/1):</label>
+            <input type="text" id="targetPath" placeholder="Enter path (e.g. 0/1)">
+            <button onclick="loadCurrentDocWithPath()">
+                View Sub-Document
+            </button>
+        </div>
+
+        <div class="control-group">
+            <label>Path (e.g. 0/1/content):</label>
+            <input type="text" id="targetPath" placeholder="Enter path...">
+            
+            <label>Value / JSON Payload:</label>
+            <textarea id="payload" rows="3" placeholder='{"value": "Hello"} or {"id": "..."}'></textarea>
+            
+            <button onclick="performInsert()">Insert / Update</button>
+            <button class="delete" onclick="performDelete()">Delete Path</button>
+        </div>
+
+        <div class="control-group">
+            <input type="text" id="searchQ" placeholder="Search query...">
+            <button onclick="performSearch()">Search</button>
+            <div id="searchResults" style="font-size: 0.8em;"></div>
+        </div>
+
+        <div id="status-bar">WebSocket: <span id="wsStatus" class="offline">Connecting...</span></div>
+    </div>
+
+    <div id="main-view">
+        <div id="visual-container">
+            <h4>Visual Preview</h4>
+            <div id="visual-content">
+                <p style="color:#ccc">Select a document to view...</p>
+            </div>
+        </div>
+
+        <div id="json-container">
+            <h4>JSON Structure</h4>
+            <pre id="json-content">Waiting for data...</pre>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

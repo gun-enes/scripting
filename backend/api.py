@@ -5,9 +5,12 @@ from repo import DocumentRepo
 from new_db import NewDb
 import json  
 import uuid
+from flask_cors import CORS 
+
 
 app = Flask(__name__)
 app.secret_key = "super_secret_key"  
+CORS(app)
 
 
 newDb = NewDb()
@@ -144,8 +147,21 @@ def search_document(doc_id):
 
 @app.route('/api/document/<doc_id>/draw', methods=['GET'])
 def draw_document(doc_id):
+    # 1. Find the root
     current_document = repo.find_document_by_id(doc_id)
-    return current_document.html()
+    if not current_document:
+        return "Document not found", 404
+
+    path = request.args.get('path')
+    
+    try:
+        if path:
+            target_node = current_document[path]
+            return target_node.html()
+        else:
+            return current_document.html()
+    except Exception as e:
+        return f"Error resolving path: {str(e)}", 400
 
 @app.route('/api/document/<doc_id>/parent', methods=['GET'])
 def parent_document(doc_id):
@@ -162,13 +178,13 @@ if __name__ == '__main__':
     app.run(debug=True, port=8000)
 
 """
-def create_document(): +
-def list_documents(): +
-def get_document(doc_id): +
-def document_insert(doc_id):
-def document_delete(doc_id): +
-def import_json(): +
-def search_document(doc_id): +
-def draw_document(doc_id): +
-def parent_document(doc_id): +
+@app.route('/api/document', methods=['POST'])
+@app.route('/api/document', methods=['GET'])
+@app.route('/api/document/<doc_id>', methods=['GET'])
+@app.route('/api/document/<doc_id>/insert', methods=['POST'])
+@app.route('/api/document/<doc_id>/delete', methods=['DELETE'])
+@app.route('/api/document/import', methods=['POST'])
+@app.route('/api/document/<doc_id>/search', methods=['GET'])
+@app.route('/api/document/<doc_id>/draw', methods=['GET'])
+@app.route('/api/document/<doc_id>/parent', methods=['GET'])
 """

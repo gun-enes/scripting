@@ -32,7 +32,7 @@ class NewDb:
     def get_all(self):
         with sqlite3.connect(NewDb.DB_NAME) as conn:
             cursor = conn.cursor()
-            cursor.execute("""select id, markup, attributes, root_id, path from repo""")
+            cursor.execute("""select id from repo""")
             return cursor.fetchall()
     
     def insert_document_tree(self, doc):
@@ -220,7 +220,7 @@ class NewDb:
             return cursor.fetchone()
 
     def _construct_document(self, doc, is_root=False):
-        doc_obj = Document(id=doc[0][0])
+        doc_obj = Document(id=doc[0][0], markup=doc[0][1], attributes=json.loads(doc[0][2]))
         original_path = doc[0][3]
         path_size = len(original_path)
         if is_root:

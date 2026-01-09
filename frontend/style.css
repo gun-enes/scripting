@@ -1,0 +1,53 @@
+body { font-family: sans-serif; margin: 0; display: flex; height: 100vh; background: #f4f4f4; }
+.container { display: flex; width: 100%; }
+
+/* Sidebar */
+.sidebar { width: 300px; background: #2c3e50; color: white; padding: 20px; display: flex; flex-direction: column; gap: 20px; }
+.panel { background: #34495e; padding: 15px; border-radius: 5px; }
+input { width: 90%; padding: 5px; margin-bottom: 10px; }
+button { cursor: pointer; padding: 5px 10px; }
+.btn-green { background: #27ae60; color: white; border: none; }
+.btn-red { background: #c0392b; color: white; border: none; }
+
+/* Main Content */
+.main-content { flex: 1; padding: 20px; overflow-y: auto; }
+.canvas-container { background: white; padding: 10px; border-radius: 5px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+.table-container { background: white; padding: 20px; border-radius: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+canvas { background: #fafafa; border: 1px dashed #ccc; width: 100%; }
+
+/* Status Indicators */
+.status-online { color: #2ecc71; font-weight: bold; margin-top: auto;}
+.status-offline { color: #e74c3c; font-weight: bold; margin-top: auto;}
+
+#main-view {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column; /* Stack them vertically */
+    height: 100vh;
+    overflow: hidden; /* Prevent main scroll, let children scroll */
+}
+
+#visual-container {
+    flex: 1; /* Takes up 50% height */
+    padding: 10px 20px;
+    border-bottom: 2px solid #ccc;
+    overflow-y: auto; /* Scrollable if drawing is big */
+    background: white;
+}
+
+#json-container {
+    flex: 1; /* Takes up remaining 50% */
+    padding: 10px 20px;
+    background-color: #282c34; /* Dark editor background */
+    color: #abb2bf;
+    overflow-y: auto; /* Scrollable */
+}
+
+#json-content {
+    font-family: "Consolas", "Courier New", monospace;
+    white-space: pre-wrap; /* Wrap long lines */
+    font-size: 0.9em;
+}
+
+h4 { margin-top: 0; color: #666; border-bottom: 1px solid #eee; padding-bottom: 5px;}
+#json-container h4 { color: #ddd; border-color: #444; }
