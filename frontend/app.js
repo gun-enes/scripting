@@ -131,12 +131,46 @@ function performInsert() {
     });
 }
 
+function performImport() {
+    const rawJson = $('#importPayload').val();
+    if (!rawJson) return alert("Please paste JSON data first");
+
+    let payload;
+    try {
+        payload = JSON.parse(rawJson);
+    } catch (e) {
+        return alert("Invalid JSON syntax. Please check your input.");
+    }
+
+    // Send to /api/document/import
+    $.ajax({
+        url: `${API_BASE}/import`,
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify(payload),
+        success: (res) => {
+            // res.value contains the new Document ID (from your backend logic)
+            alert("Import Successful! New ID: " + res.value);
+            
+            // Clear the textarea
+            $('#importPayload').val('');
+            
+            // Refresh the dropdown list so the user can select the new document immediately
+            refreshDocList();
+        },
+        error: (err) => {
+            const reason = err.responseJSON ? err.responseJSON.reason : err.statusText;
+            alert("Import Failed: " + reason);
+        }
+    });
+}
+
 function performDelete() {
     if (!currentDocId) return alert("Select a document first");
-    const path = $('#targetPath').val();
+    const pathVal = $('#deletePath').val().trim();
     
     $.ajax({
-        url: `${API_BASE}/${currentDocId}/delete?path=${path}`,
+        url: `${API_BASE}/${currentDocId}/delete?path=${encodeURIComponent(pathVal)}`,
         type: 'DELETE',
         success: (res) => {
             console.log("Delete success:", res);

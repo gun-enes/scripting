@@ -1,53 +1,178 @@
-body { font-family: sans-serif; margin: 0; display: flex; height: 100vh; background: #f4f4f4; }
-.container { display: flex; width: 100%; }
+/* --- GLOBAL RESET & TYPOGRAPHY --- */
+* {
+    box-sizing: border-box;
+}
 
-/* Sidebar */
-.sidebar { width: 300px; background: #2c3e50; color: white; padding: 20px; display: flex; flex-direction: column; gap: 20px; }
-.panel { background: #34495e; padding: 15px; border-radius: 5px; }
-input { width: 90%; padding: 5px; margin-bottom: 10px; }
-button { cursor: pointer; padding: 5px 10px; }
-.btn-green { background: #27ae60; color: white; border: none; }
-.btn-red { background: #c0392b; color: white; border: none; }
+body { 
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+    margin: 0; 
+    display: flex; 
+    height: 100vh; 
+    background: #ecf0f1; 
+    color: #333;
+}
 
-/* Main Content */
-.main-content { flex: 1; padding: 20px; overflow-y: auto; }
-.canvas-container { background: white; padding: 10px; border-radius: 5px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-.table-container { background: white; padding: 20px; border-radius: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-canvas { background: #fafafa; border: 1px dashed #ccc; width: 100%; }
+/* --- SIDEBAR (CONTROLS) --- */
+#sidebar { 
+    width: 400px;           /* Default wider width */
+    min-width: 300px;       /* Minimum constraint */
+    max-width: 50vw;        /* Maximum constraint */
+    
+    background: #2c3e50;    /* Midnight Blue */
+    color: #ecf0f1;         /* Light Text */
+    padding: 20px; 
+    
+    display: flex; 
+    flex-direction: column; 
+    gap: 20px;
+    
+    /* Resizable Logic */
+    resize: horizontal;
+    overflow: auto;         /* Required for resize to handle content */
+    border-right: 4px solid #34495e; /* Grip handle visual */
+    z-index: 10;
+    box-shadow: 2px 0 10px rgba(0,0,0,0.2);
+}
 
-/* Status Indicators */
-.status-online { color: #2ecc71; font-weight: bold; margin-top: auto;}
-.status-offline { color: #e74c3c; font-weight: bold; margin-top: auto;}
+#sidebar h3 {
+    margin-top: 0;
+    border-bottom: 1px solid #34495e;
+    padding-bottom: 10px;
+    font-size: 1.2rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
 
+/* Panels within Sidebar */
+.panel, .control-group { 
+    background: #34495e; 
+    padding: 15px; 
+    border-radius: 8px; 
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+/* --- FORM ELEMENTS --- */
+label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #bdc3c7;
+}
+
+input[type="text"], 
+select, 
+textarea { 
+    width: 100%; 
+    padding: 10px; 
+    margin-bottom: 12px; 
+    border: 1px solid #2c3e50; 
+    border-radius: 4px;
+    background: #ecf0f1;
+    color: #2c3e50;
+    font-size: 0.9rem;
+    transition: border 0.2s;
+}
+
+input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: #3498db;
+    background: #fff;
+}
+
+textarea {
+    min-height: 120px;      /* Taller default */
+    resize: vertical;       /* Allow height resizing */
+    font-family: 'Consolas', 'Monaco', monospace;
+    font-size: 0.85em;
+    white-space: pre;       /* Code formatting */
+    overflow-x: auto;
+}
+
+/* --- BUTTONS --- */
+button { 
+    cursor: pointer; 
+    padding: 10px 15px; 
+    border-radius: 4px; 
+    border: none;
+    font-weight: 600;
+    font-size: 0.9rem;
+    transition: transform 0.1s, opacity 0.2s;
+    width: 100%;            /* Full width buttons in sidebar */
+    margin-bottom: 5px;
+}
+
+button:active { transform: scale(0.98); }
+button:hover { opacity: 0.9; }
+
+/* Button Variants */
+button { background: #3498db; color: white; } /* Default Blue */
+.btn-green { background: #27ae60; color: white; }
+.btn-red, button.delete { background: #c0392b; color: white; }
+.btn-sm { font-size: 0.8rem; padding: 5px 10px; }
+
+/* --- MAIN CONTENT (SPLIT VIEW) --- */
 #main-view {
     flex-grow: 1;
     display: flex;
-    flex-direction: column; /* Stack them vertically */
+    flex-direction: column; /* Vertical Stack */
     height: 100vh;
-    overflow: hidden; /* Prevent main scroll, let children scroll */
+    overflow: hidden;       /* No outer scroll */
+    background: #bdc3c7;
 }
 
+/* Top Half: Visual Preview */
 #visual-container {
-    flex: 1; /* Takes up 50% height */
-    padding: 10px 20px;
-    border-bottom: 2px solid #ccc;
-    overflow-y: auto; /* Scrollable if drawing is big */
-    background: white;
+    flex: 1;                /* Takes 50% */
+    background: #ffffff;
+    padding: 30px;
+    overflow: auto;
+    position: relative;
+    border-bottom: 4px solid #bdc3c7;
 }
 
+/* Bottom Half: JSON Editor */
 #json-container {
-    flex: 1; /* Takes up remaining 50% */
-    padding: 10px 20px;
-    background-color: #282c34; /* Dark editor background */
-    color: #abb2bf;
-    overflow-y: auto; /* Scrollable */
+    flex: 1;                /* Takes 50% */
+    background: #1e1e1e;    /* VS Code Dark BG */
+    color: #d4d4d4;         /* VS Code Light Text */
+    padding: 20px;
+    overflow: auto;
+    font-family: 'Consolas', monospace;
+    border-top: 1px solid #333;
 }
+
+/* Headers inside main view */
+#visual-container h4, #json-container h4 {
+    margin-top: 0;
+    position: sticky;
+    top: 0;
+    background: inherit; /* Matches parent bg */
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(0,0,0,0.1);
+    opacity: 0.7;
+    z-index: 5;
+    text-transform: uppercase;
+    font-size: 0.8rem;
+    letter-spacing: 1px;
+}
+#json-container h4 { border-bottom-color: #333; }
 
 #json-content {
-    font-family: "Consolas", "Courier New", monospace;
-    white-space: pre-wrap; /* Wrap long lines */
+    white-space: pre-wrap;
     font-size: 0.9em;
+    line-height: 1.4;
+    color: #9cdcfe; /* Light Blue for code-like look */
 }
 
-h4 { margin-top: 0; color: #666; border-bottom: 1px solid #eee; padding-bottom: 5px;}
-#json-container h4 { color: #ddd; border-color: #444; }
+/* --- STATUS INDICATORS --- */
+#status-bar {
+    margin-top: auto; /* Push to bottom of sidebar */
+    padding-top: 20px;
+    border-top: 1px solid #34495e;
+    font-size: 0.85rem;
+    color: #bdc3c7;
+}
+
+.status-online { color: #2ecc71; font-weight: bold; } /* Green */
+.status-offline { color: #e74c3c; font-weight: bold; } /* Red */

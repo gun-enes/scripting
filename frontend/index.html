@@ -5,22 +5,177 @@
     <title>Phase 4: Document Editor</title>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <style>
-        body { font-family: sans-serif; display: flex; height: 100vh; margin: 0; }
+        /* --- GLOBAL RESET & TYPOGRAPHY --- */
+        * { box-sizing: border-box; }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            margin: 0; 
+            display: flex; 
+            height: 100vh; 
+            background: #ecf0f1; 
+            color: #333;
+        }
+
+        /* --- SIDEBAR (CONTROLS) --- */
+        #sidebar { 
+            width: 400px;           
+            min-width: 300px;       
+            max-width: 50vw;        
+            background: #2c3e50;    /* Midnight Blue */
+            color: #ecf0f1;         
+            padding: 20px; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 20px;
+            /* Resizable Logic */
+            resize: horizontal;
+            overflow: auto;         
+            border-right: 4px solid #34495e; 
+            z-index: 10;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.2);
+        }
+
+        #sidebar h3 {
+            margin-top: 0;
+            border-bottom: 1px solid #34495e;
+            padding-bottom: 10px;
+            font-size: 1.2rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Panels within Sidebar */
+        .control-group { 
+            background: #34495e; 
+            padding: 15px; 
+            border-radius: 8px; 
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            gap: 10px; /* Spacing between inputs */
+        }
+
+        /* --- FORM ELEMENTS --- */
+        label {
+            display: block;
+            margin-bottom: 2px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #bdc3c7;
+        }
+
+        input[type="text"], select, textarea { 
+            width: 100%; 
+            padding: 10px; 
+            border: 1px solid #2c3e50; 
+            border-radius: 4px;
+            background: #ecf0f1;
+            color: #2c3e50;
+            font-size: 0.9rem;
+            transition: border 0.2s;
+        }
         
-        /* Sidebar Styles */
-        #sidebar { width: 300px; background: #f0f0f0; padding: 20px; border-right: 1px solid #ccc; display: flex; flex-direction: column; gap: 15px; }
-        .control-group { background: white; padding: 10px; border: 1px solid #ddd; border-radius: 4px; }
-        input, select, button { width: 100%; box-sizing: border-box; margin-bottom: 5px; padding: 5px; }
-        button { cursor: pointer; background: #007bff; color: white; border: none; }
-        button.delete { background: #dc3545; }
+        /* Specific fix for inputs inside flex container */
+        input { margin-bottom: 0; } 
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #3498db;
+            background: #fff;
+        }
+
+        textarea {
+            min-height: 100px;      
+            resize: vertical;       
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 0.85em;
+            white-space: pre;       
+            overflow-x: auto;
+        }
+
+        /* --- BUTTONS --- */
+        button { 
+            cursor: pointer; 
+            padding: 10px 15px; 
+            border-radius: 4px; 
+            border: none;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: transform 0.1s, opacity 0.2s;
+            width: 100%;            
+            background: #3498db; 
+            color: white; 
+        }
+
+        button:active { transform: scale(0.98); }
+        button:hover { opacity: 0.9; }
+        button.delete { background: #c0392b; }
         
-        /* Main Display */
-        #main-view { flex-grow: 1; padding: 20px; overflow: auto; background: #fff; }
-        
-        /* Status Bar */
-        #status-bar { margin-top: auto; font-size: 0.8em; color: #666; }
-        .online { color: green; font-weight: bold; }
-        .offline { color: red; font-weight: bold; }
+        /* --- MAIN CONTENT (SPLIT VIEW) --- */
+        #main-view {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column; 
+            height: 100vh;
+            overflow: hidden;       
+            background: #bdc3c7;
+        }
+
+        /* Top Half: Visual Preview */
+        #visual-container {
+            flex: 1;                
+            background: #ffffff;
+            padding: 30px;
+            overflow: auto;
+            position: relative;
+            border-bottom: 4px solid #bdc3c7;
+        }
+
+        /* Bottom Half: JSON Editor */
+        #json-container {
+            flex: 1;                
+            background: #1e1e1e;    
+            color: #d4d4d4;         
+            padding: 20px;
+            overflow: auto;
+            font-family: 'Consolas', monospace;
+            border-top: 1px solid #333;
+        }
+
+        /* Headers inside main view */
+        #visual-container h4, #json-container h4 {
+            margin-top: 0;
+            position: sticky;
+            top: 0;
+            background: inherit; 
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(0,0,0,0.1);
+            opacity: 0.7;
+            z-index: 5;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            letter-spacing: 1px;
+        }
+        #json-container h4 { border-bottom-color: #333; }
+
+        #json-content {
+            white-space: pre-wrap;
+            font-size: 0.9em;
+            line-height: 1.4;
+            color: #9cdcfe; 
+            margin: 0;
+        }
+
+        /* --- STATUS INDICATORS --- */
+        #status-bar {
+            margin-top: auto; 
+            padding-top: 20px;
+            border-top: 1px solid #34495e;
+            font-size: 0.85rem;
+            color: #bdc3c7;
+        }
+        .online { color: #2ecc71; font-weight: bold; } 
+        .offline { color: #e74c3c; font-weight: bold; } 
     </style>
 </head>
 <body>
@@ -35,7 +190,7 @@
         </div>
 
         <div class="control-group">
-            <label>Path (e.g. 0/1):</label>
+            <label>View Sub-Document Path:</label>
             <input type="text" id="targetPath" placeholder="Enter path (e.g. 0/1)">
             <button onclick="loadCurrentDocWithPath()">
                 View Sub-Document
@@ -43,20 +198,26 @@
         </div>
 
         <div class="control-group">
-            <label>Path (e.g. 0/1/content):</label>
-            <input type="text" id="targetPath" placeholder="Enter path...">
+            <label>Target Path (for Edit):</label>
+            <input type="text" id="deletePath" placeholder="Enter path...">
             
-            <label>Value / JSON Payload:</label>
-            <textarea id="payload" rows="3" placeholder='{"value": "Hello"} or {"id": "..."}'></textarea>
+            <label>Doc ID to Insert:</label>
+            <input id="payload" placeholder="Insert doc with id...">
             
             <button onclick="performInsert()">Insert / Update</button>
-            <button class="delete" onclick="performDelete()">Delete Path</button>
+            <button type="button" class="delete" onclick="performDelete()">Delete Path</button>
+        </div>
+
+        <div class="control-group">
+            <label style="color: #2ecc71; font-weight: bold;">Import Document:</label>
+            <textarea id="importPayload" rows="15" placeholder='Paste full JSON export here...'></textarea>
+            <button onclick="performImport()" style="background-color: #27ae60;">Import JSON</button>
         </div>
 
         <div class="control-group">
             <input type="text" id="searchQ" placeholder="Search query...">
             <button onclick="performSearch()">Search</button>
-            <div id="searchResults" style="font-size: 0.8em;"></div>
+            <div id="searchResults" style="font-size: 0.8em; color: #ecf0f1; margin-top:5px;"></div>
         </div>
 
         <div id="status-bar">WebSocket: <span id="wsStatus" class="offline">Connecting...</span></div>

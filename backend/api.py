@@ -63,8 +63,37 @@ def get_document(doc_id):
         else:
             return jsonify({"result": "success", "value": json.loads(root_document.json())})
 
+# insert document into document
+@app.route('/api/document/<doc_id>/insert/<doc_to_insert>', methods=['POST'])
+def insert_document(doc_id, doc_to_insert):
+    if not is_valid_uuid(doc_id) or not is_valid_uuid(doc_to_insert):
+        return jsonify({"result": "error", "reason": "Invalid UUID"}), 400
+    with repo_lock:
+        try:
+            root_doc = repo.find_document_by_id(doc_id)
+            found_doc = repo.find_document_by_id(doc_to_insert)
+            path = request.args.get('path') # path is required
+
+            if not root_doc:
+                return jsonify({"result": "error", "reason": f"Document with {doc_id} id is not found"}), 404
+
+            if not found_doc:
+                return jsonify({"result": "error", "reason": f"Document with {doc_id} id is not found"}), 404
+
+            if not path:
+                return jsonify({"result": "error", "reason": "Path is required"}), 400
+
+            root_doc[path] = found_doc
+            newDb.insert_document_to_document(doc_id, payload_id, path)
+            return jsonify({"result": "success", "value": f"Document with id {payload_id} is inserted at {path}"}), 201
+        except Exception as e:
+            return jsonify({"result": "error", "reason": str(e)}), 404
+
+
+
+# insert value into document
 @app.route('/api/document/<doc_id>/insert', methods=['POST'])
-def document_insert(doc_id):
+def insert_value(doc_id):
     """
     insert a document with its id at a given path
     create a document with the data at a given path
@@ -74,53 +103,49 @@ def document_insert(doc_id):
     with repo_lock:
         try:
             root_doc = repo.find_document_by_id(doc_id)
+            path = request.args.get('path') # path is required
+
             if not root_doc:
                 return jsonify({"result": "error", "reason": f"Document with {doc_id} id is not found"}), 404
-
-            path = request.args.get('path') # path is required
             if not path:
                 return jsonify({"result": "error", "reason": "Path is required"}), 400
 
             data = request.json 
-            # create a document with the data at a given path
             if not isinstance(data, dict):
+                # doc[0/1] = 
                 root_doc[path] = data
                 return jsonify({"result": "success", "value": f"Data added at {path} path!"})
 
-            payload_id = data.get('id')
-
-            # insert document into document
-            if payload_id and isinstance(payload_id, str) and is_valid_uuid(payload_id): # insert document into document
-                found_doc = repo.find_document_by_id(payload_id)
-                if found_doc:
-                    root_doc[path] = found_doc
-                    print("helüü")
-                    newDb.insert_document_to_document(doc_id, payload_id, path)
-                    return jsonify({"result": "success", "value": f"Document with id {payload_id} is inserted at {path}"}), 201
-                else:
-                    return jsonify({"result": "error", "reason": f"Document with id {payload_id} is not found"}), 404
             if data.get("value"):
+                # doc[0/1/content] = value
                 value = data.get("value")
                 root_doc[path] = value
                 return jsonify({"result": "success", "value": value + " is inserted at " + path}), 200
+
         except Exception as e:
             return jsonify({"result": "error", "reason": str(e)}), 404
 
 @app.route('/api/document/<doc_id>/delete', methods=['DELETE'])
 def document_delete(doc_id):
+    print("inside")
     if not is_valid_uuid(doc_id):
+        print("invalid uuid")
         return jsonify({"result": "error", "reason": "Invalid UUID"}), 400
     with repo_lock:
         try:
             current_document = repo.find_document_by_id(doc_id)
             if not current_document:
+                print("doc not found")
                 return jsonify({"result": "error", "reason": f"Document with {doc_id} id is not found"}), 404
             path = request.args.get('path') # path is optional
+            print(path)
             if not path:
                 repo.delete(doc_id)
+                print("Deleted without path")
                 return jsonify({"result": "success", "value": f"Item with {doc_id} id is deleted!"})
             newDb.delete_document(current_document[path].id)
             del current_document[path]
+            print("Deleted with path")
             return jsonify({"result": "success", "value": f"Item at {path} path is deleted!"})
         except ValueError as e:
             return jsonify({"result": "error", "reason": "Path is not appropriate"}), 404
