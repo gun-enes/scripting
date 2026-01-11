@@ -5,6 +5,7 @@ from repo import DocumentRepo
 from new_db import NewDb
 import json  
 import uuid
+import requests
 from flask_cors import CORS 
 
 
@@ -17,6 +18,24 @@ newDb = NewDb()
 newDb.init_repo()
 repo = DocumentRepo(newDb)
 repo_lock = RLock()
+
+# WebSocket notification settings
+WS_NOTIFY_URL = "http://localhost:8081/notify"
+
+def notify_document_update(doc_id: str, action: str = "update"):
+    """
+    Notify the WebSocket server about a document update.
+    This will broadcast the update to all connected clients viewing this document.
+    """
+    try:
+        requests.post(
+            WS_NOTIFY_URL,
+            json={"doc_id": doc_id, "action": action},
+            timeout=1
+        )
+    except requests.exceptions.RequestException as e:
+        # Don't fail the main request if WebSocket notification fails
+        print(f"WebSocket notification failed: {e}")
 
 def is_valid_uuid(val):
     try:
@@ -116,10 +135,22 @@ def insert_value(doc_id):
                 root_doc[path] = data
                 return jsonify({"result": "success", "value": f"Data added at {path} path!"})
 
+            if data.get("markup"):
+                # Create a new element with the specified markup type
+                markup_type = data.get("markup")
+                root_doc[path] = markup_type  # This creates a new Document with this markup
+                # Save the updated tree to database
+                newDb.insert_document_tree(root_doc)
+                notify_document_update(doc_id, "insert")
+                return jsonify({"result": "success", "value": f"Element with markup '{markup_type}' created at {path}"}), 201
+
             if data.get("value"):
                 # doc[0/1/content] = value
                 value = data.get("value")
                 root_doc[path] = value
+                # Save the updated tree to database
+                newDb.insert_document_tree(root_doc)
+                notify_document_update(doc_id, "insert")
                 return jsonify({"result": "success", "value": value + " is inserted at " + path}), 200
 
         except Exception as e:
@@ -141,11 +172,11 @@ def document_delete(doc_id):
             print(path)
             if not path:
                 repo.delete(doc_id)
-                print("Deleted without path")
+                notify_document_update(doc_id, "delete")
                 return jsonify({"result": "success", "value": f"Item with {doc_id} id is deleted!"})
             newDb.delete_document(current_document[path].id)
             del current_document[path]
-            print("Deleted with path")
+            notify_document_update(doc_id, "delete")
             return jsonify({"result": "success", "value": f"Item at {path} path is deleted!"})
         except ValueError as e:
             return jsonify({"result": "error", "reason": "Path is not appropriate"}), 404
@@ -159,6 +190,7 @@ def import_json():
         new_doc.importJson(request.json)
         new_doc.regenerate_ids() 
         newDb.insert_document_tree(new_doc)
+        notify_document_update(new_doc.id, "import")
         return jsonify({"result": "success", "value": new_doc.id}), 201
     except Exception as e:
         return jsonify({"result": "error", "reason": str(e)}), 400

@@ -209,6 +209,19 @@
         </div>
 
         <div class="control-group">
+            <label style="color: #f39c12; font-weight: bold;">Quick Edit:</label>
+            <label>Path:</label>
+            <input type="text" id="quickEditPath" placeholder="e.g. 0/1 or 0/1/content">
+            <label>Value (markup type or text content):</label>
+            <input type="text" id="quickEditValue" placeholder="e.g. 'paragraph' or 'Hello World'">
+            <button onclick="performQuickEdit()" style="background-color: #f39c12;">Apply Quick Edit</button>
+            <div style="font-size: 0.75em; color: #95a5a6; margin-top: 5px;">
+                • Enter a markup (paragraph, strong, list, etc.) to create element<br>
+                • Enter text to set content value
+            </div>
+        </div>
+
+        <div class="control-group">
             <label style="color: #2ecc71; font-weight: bold;">Import Document:</label>
             <textarea id="importPayload" rows="15" placeholder='Paste full JSON export here...'></textarea>
             <button onclick="performImport()" style="background-color: #27ae60;">Import JSON</button>
